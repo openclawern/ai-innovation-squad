@@ -1,0 +1,75 @@
+flowchart TB
+    subgraph User["👤 User"]
+        Browser["Web Browser"]
+    end
+
+    subgraph Frontend["🎨 Frontend Layer"]
+        UploadUI["Upload Form<br/>(Jinja2 Template)"]
+        ResultsUI["Results Dashboard<br/>(Chart.js Visualizations)"]
+    end
+
+    subgraph Backend["⚙️ FastAPI Backend"]
+        API["/analyze Endpoint"]
+        HealthCheck["/health Endpoint"]
+        JSONAPI["/api/analyze Endpoint"]
+    end
+
+    subgraph Extraction["📄 PDF Extraction Layer"]
+        TextExtract["pdfplumber<br/>(Text-based PDFs)"]
+        OCR["Tesseract OCR<br/>(Image-based PDFs)"]
+        Fallback["Hardcoded Fallback<br/>(Demo Mode)"]
+    end
+
+    subgraph Analysis["🧠 LLM Analysis Layer"]
+        Anthropic["Anthropic Claude Haiku<br/>(Primary Model)"]
+        OpenAI["OpenAI GPT-4o Mini<br/>(Alternative)"]
+        Demo["Pre-computed Demo<br/>(Offline Fallback)"]
+    end
+
+    subgraph Output["📊 Structured Output"]
+        JSON["JSON Analysis Result"]
+        subgraph Components["Analysis Components"]
+            Alignment["Alignment Score<br/>(0-100)"]
+            Balance["Balance Score<br/>(0-100)"]
+            Blooms["Bloom's Taxonomy<br/>Distribution"]
+            Weightage["Topic Weightage<br/>Breakdown"]
+            Recommendations["Actionable<br/>Recommendations"]
+        end
+    end
+
+    subgraph Eval["✅ Evaluation Framework"]
+        MarksAcc["Marks Accuracy"]
+        BloomAgree["Bloom's Agreement"]
+        ObjRecall["Objective Recall"]
+        FactCheck["Factual Consistency"]
+        Overall["Overall Score<br/>(Weighted Average)"]
+    end
+
+    Browser --> UploadUI
+    UploadUI --> |"POST /analyze<br/>syllabus.pdf + exam.pdf"| API
+    API --> |"Extract Text"| Extraction
+    TextExtract --> |"Text Found"| Analysis
+    OCR --> |"OCR Result"| Analysis
+    Fallback --> |"Demo Content"| Analysis
+    Analysis --> |"Structured JSON"| JSON
+    JSON --> Components
+    JSON --> ResultsUI
+    ResultsUI --> Browser
+
+    JSON --> |"Ground Truth Comparison"| Eval
+    MarksAcc --> Overall
+    BloomAgree --> Overall
+    ObjRecall --> Overall
+    FactCheck --> Overall
+
+    HealthCheck --> |"Check API Keys"| Anthropic
+    HealthCheck --> |"Check API Keys"| OpenAI
+    JSONAPI --> |"Programmatic Access"| Analysis
+
+    style User fill:#e8f4f8
+    style Frontend fill:#fef3c7
+    style Backend fill:#dbeafe
+    style Extraction fill:#d1fae5
+    style Analysis fill:#ede9fe
+    style Output fill:#fce7f3
+    style Eval fill:#fee2e2
