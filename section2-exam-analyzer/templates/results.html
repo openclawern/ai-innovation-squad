@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analysis Results — Exam Paper Analyzer</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root { --primary:#2563eb; --bg:#f8fafc; --card:#ffffff; --border:#e2e8f0; --text:#1e293b; --muted:#64748b; --green:#16a34a; --amber:#d97706; --red:#dc2626; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); }
+  .header { background:var(--primary); color:white; padding:1.25rem 2rem; display:flex; align-items:center; gap:1rem; }
+  .header a { color:rgba(255,255,255,0.8); text-decoration:none; font-size:0.875rem; }
+  .header h1 { font-size:1.25rem; font-weight:700; }
+  .container { max-width:1000px; margin:2rem auto; padding:0 1rem; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+  @media(max-width:640px) { .grid2 { grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; }
+  .card h2 { font-size:1rem; font-weight:600; margin-bottom:1rem; color:var(--text); }
+  .score-ring { display:flex; flex-direction:column; align-items:center; }
+  .score-number { font-size:3rem; font-weight:700; line-height:1; }
+  .score-label { font-size:0.75rem; color:var(--muted); margin-top:0.25rem; }
+  .score-good { color:var(--green); }
+  .score-ok { color:var(--amber); }
+  .score-bad { color:var(--red); }
+  table { width:100%; border-collapse:collapse; font-size:0.875rem; }
+  th { text-align:left; padding:0.5rem 0.75rem; background:#f1f5f9; font-weight:500; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); }
+  td { padding:0.5rem 0.75rem; border-top:1px solid var(--border); }
+  tr:hover td { background:#f8fafc; }
+  .bloom-bar { height:8px; border-radius:4px; background:var(--primary); display:inline-block; }
+  .badge { display:inline-block; padding:0.15rem 0.5rem; border-radius:999px; font-size:0.7rem; font-weight:500; }
+  .b-evaluate { background:#fef3c7; color:#92400e; }
+  .b-analyze { background:#dbeafe; color:#1e40af; }
+  .b-apply { background:#d1fae5; color:#065f46; }
+  .b-understand { background:#f3f4f6; color:#374151; }
+  .b-remember { background:#fee2e2; color:#991b1b; }
+  .b-create { background:#ede9fe; color:#5b21b6; }
+  .b-source { background:#e0f2fe; color:#0369a1; }
+  .b-essay { background:#fce7f3; color:#9d174d; }
+  .tag { display:inline-block; padding:0.15rem 0.5rem; border-radius:4px; font-size:0.7rem; background:#f1f5f9; color:var(--muted); margin:0.1rem; }
+  ul.recs { padding-left:1.2rem; }
+  ul.recs li { margin-bottom:0.5rem; font-size:0.875rem; line-height:1.5; }
+  .chart-container { position:relative; height:220px; }
+  .missing { color:var(--red); font-size:0.875rem; }
+  .covered { color:var(--green); font-size:0.875rem; }
+  .summary-text { font-size:0.875rem; line-height:1.6; color:var(--text); }
+  .meta { font-size:0.75rem; color:var(--muted); margin-bottom:1.5rem; }
+  .note { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:0.75rem; font-size:0.8rem; color:#78350f; margin-bottom:1rem; }
+  details summary { cursor:pointer; font-size:0.875rem; color:var(--primary); }
+  pre { background:#f1f5f9; border-radius:8px; padding:1rem; font-size:0.75rem; overflow:auto; max-height:400px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <a href="/">← New Analysis</a>
+    <h1>Analysis Results</h1>
+  </div>
+</div>
+
+<div class="container">
+
+{% if result.get('note') %}
+<div class="note">⚠️ {{ result.note }}</div>
+{% endif %}
+
+<p class="meta">
+  📄 Syllabus: <strong>{{ syllabus_name }}</strong> &nbsp;|&nbsp;
+  📝 Exam: <strong>{{ exam_name }}</strong> &nbsp;|&nbsp;
+  🤖 Model: <strong>{{ result.get('model_used', 'unknown') }}</strong>
+</p>
+
+<!-- Scores -->
+<div class="grid2">
+  <div class="card">
+    <h2>Alignment Score</h2>
+    <div class="score-ring">
+      {% set as = result.get('alignment_analysis', {}).get('alignment_score', 0) %}
+      <div class="score-number {% if as >= 75 %}score-good{% elif as >= 50 %}score-ok{% else %}score-bad{% endif %}">{{ as }}</div>
+      <div class="score-label">out of 100</div>
+    </div>
+    <p style="margin-top:1rem; font-size:0.8rem; color:var(--muted);">{{ result.get('alignment_analysis', {}).get('alignment_notes', '') }}</p>
+  </div>
+  <div class="card">
+    <h2>Balance Score</h2>
+    <div class="score-ring">
+      {% set bs = result.get('balance_analysis', {}).get('balance_score', 0) %}
+      <div class="score-number {% if bs >= 75 %}score-good{% elif bs >= 50 %}score-ok{% else %}score-bad{% endif %}">{{ bs }}</div>
+      <div class="score-label">out of 100</div>
+    </div>
+    <p style="margin-top:1rem; font-size:0.8rem; color:var(--muted);">{{ result.get('balance_analysis', {}).get('balance_notes', '') }}</p>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="grid2">
+  <div class="card">
+    <h2>Topic Weightage</h2>
+    <div class="chart-container">
+      <canvas id="weightageChart"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Bloom's Taxonomy Distribution</h2>
+    <div class="chart-container">
+      <canvas id="bloomsChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Questions Table -->
+{% if result.get('exam_questions') %}
+<div class="card">
+  <h2>Question-by-Question Breakdown</h2>
+  <table>
+    <thead>
+      <tr><th>Q</th><th>Description</th><th>Marks</th><th>Topic</th><th>Bloom's</th><th>Type</th></tr>
+    </thead>
+    <tbody>
+      {% for q in result.exam_questions %}
+      <tr>
+        <td><strong>{{ q.question_id }}</strong></td>
+        <td>{{ q.description }}</td>
+        <td><strong>{{ q.marks }}</strong></td>
+        <td><span class="tag">{{ q.topic_mapped }}</span></td>
+        <td><span class="badge b-{{ q.bloom_level | lower }}">{{ q.bloom_level }}</span></td>
+        <td><span class="badge b-{{ q.question_type | replace('-', '') }}">{{ q.question_type }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Alignment -->
+<div class="grid2">
+  <div class="card">
+    <h2>✅ Objectives Covered</h2>
+    {% for obj in result.get('alignment_analysis', {}).get('covered_objectives', []) %}
+    <p class="covered" style="margin-bottom:0.4rem;">• {{ obj }}</p>
+    {% endfor %}
+  </div>
+  <div class="card">
+    <h2>⚠️ Objectives Not Covered</h2>
+    {% for obj in result.get('alignment_analysis', {}).get('missing_objectives', []) %}
+    <p class="missing" style="margin-bottom:0.4rem;">• {{ obj }}</p>
+    {% endfor %}
+    {% if not result.get('alignment_analysis', {}).get('missing_objectives') %}
+    <p class="covered">All major objectives are covered.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Overall Assessment -->
+<div class="card">
+  <h2>Overall Assessment</h2>
+  <p class="summary-text">{{ result.get('overall_assessment', '') }}</p>
+</div>
+
+<!-- Recommendations -->
+{% if result.get('recommendations') %}
+<div class="card">
+  <h2>Recommendations</h2>
+  <ul class="recs">
+    {% for rec in result.recommendations %}
+    <li>{{ rec }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<!-- Raw JSON -->
+<div class="card">
+  <details>
+    <summary>View raw JSON output</summary>
+    <pre style="margin-top:1rem">{{ result_json }}</pre>
+  </details>
+</div>
+
+</div>
+
+<script>
+const result = {{ result_json }};
+
+// Topic Weightage Chart
+const tw = result.topic_weightage || [];
+if (tw.length) {
+  new Chart(document.getElementById('weightageChart'), {
+    type: 'doughnut',
+    data: {
+      labels: tw.map(t => t.topic.length > 35 ? t.topic.slice(0,35)+'…' : t.topic),
+      datasets: [{
+        data: tw.map(t => t.marks),
+        backgroundColor: ['#2563eb','#7c3aed','#059669','#d97706','#dc2626'],
+        borderWidth: 2, borderColor: '#fff'
+      }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ font:{size:10}, boxWidth:12 } } } }
+  });
+}
+
+// Bloom's Chart
+const bl = result.blooms_distribution || {};
+const bloomColors = { Remember:'#fee2e2', Understand:'#e5e7eb', Apply:'#d1fae5', Analyze:'#dbeafe', Evaluate:'#fef3c7', Create:'#ede9fe' };
+const bloomBorder = { Remember:'#dc2626', Understand:'#6b7280', Apply:'#059669', Analyze:'#2563eb', Evaluate:'#d97706', Create:'#7c3aed' };
+new Chart(document.getElementById('bloomsChart'), {
+  type: 'bar',
+  data: {
+    labels: Object.keys(bl),
+    datasets: [{
+      data: Object.values(bl),
+      backgroundColor: Object.keys(bl).map(k => bloomColors[k] || '#e2e8f0'),
+      borderColor: Object.keys(bl).map(k => bloomBorder[k] || '#94a3b8'),
+      borderWidth: 2, borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, max: 100, ticks: { callback: v => v+'%', font:{size:10} }, grid: { color:'#f1f5f9' } },
+      x: { ticks: { font:{size:10} }, grid: { display:false } }
+    }
+  }
+});
+</script>
+</body>
+</html>
